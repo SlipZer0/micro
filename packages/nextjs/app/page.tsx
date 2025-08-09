@@ -1,9 +1,10 @@
 import React from "react";
+import { TokenTransferUI } from "~~/components/TokenTransferUI";
 
 const page = () => {
   return (
     <div className="flex flex-col items-center justify-center h-screen">
-      <h1 className="text-4xl font-bold">Hello World</h1>
+      <TokenTransferUI />
     </div>
   );
 };
