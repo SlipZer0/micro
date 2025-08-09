@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -8,20 +8,193 @@ import type { NextPage } from "next";
 import { ArrowLeftIcon, CheckIcon, PlayIcon, UsersIcon } from "@heroicons/react/24/outline";
 import { StarIcon as StarSolidIcon } from "@heroicons/react/24/solid";
 
+// Stable Video Modal Component - defined outside to prevent recreation
+const VideoPlayerModal = ({
+  showVideoModal,
+  course,
+  videoRef,
+  setIsPlaying,
+  handleCloseModal,
+  estimatedTotalCost,
+  isPlaying,
+  liveCounter,
+  watchTime,
+}: {
+  showVideoModal: boolean;
+  course: any;
+  videoRef: React.RefObject<HTMLVideoElement | null>;
+  setIsPlaying: (playing: boolean) => void;
+  handleCloseModal: () => void;
+  estimatedTotalCost: string;
+  isPlaying: boolean;
+  liveCounter: number;
+  watchTime: number;
+}) => {
+  // Manual play/pause handlers
+  const handlePlayPause = () => {
+    if (videoRef.current) {
+      if (isPlaying) {
+        videoRef.current.pause();
+      } else {
+        videoRef.current.play().catch(error => {
+          console.log("Play failed:", error);
+        });
+      }
+    }
+  };
+
+  return (
+    <div
+      className={`fixed inset-0 z-50 transition-all duration-300 ${showVideoModal ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+    >
+      <div className="absolute inset-0 bg-black/90 backdrop-blur-md" onClick={handleCloseModal}></div>
+
+      <div className="relative h-full flex items-center justify-center p-6">
+        <div className="bg-gradient-to-br from-slate-900/95 to-purple-900/95 backdrop-blur-xl border border-purple-500/20 rounded-3xl overflow-hidden max-w-4xl w-full max-h-[90vh]">
+          {/* Video Section */}
+          <div className="relative aspect-video bg-black group">
+            <video
+              ref={videoRef}
+              controls
+              className="w-full h-full object-cover"
+              onPlay={() => {
+                console.log("Video started playing");
+                setIsPlaying(true);
+              }}
+              onPause={() => {
+                console.log("Video paused");
+                setIsPlaying(false);
+              }}
+              onError={e => console.error("Video error:", e)}
+              onLoadStart={() => console.log("Loading started")}
+              onCanPlay={() => console.log("Can play")}
+            >
+              <source src="/videos/advanced-react-patterns.mp4" type="video/mp4" />
+              <p className="text-white">Video not supported or failed to load.</p>
+            </video>
+
+            {/* Payment Status Indicator - Top Left */}
+            <div className="absolute top-4 left-4 z-10 flex items-center space-x-2">
+              <div className={`w-3 h-3 rounded-full ${isPlaying ? "bg-green-400" : "bg-gray-400"} pulse`}></div>
+              <div className="bg-black/80 backdrop-blur-sm px-3 py-1 rounded-full text-white text-sm font-semibold">
+                {isPlaying ? "PAYING" : "PAUSED"}
+              </div>
+            </div>
+
+            {/* Live Counter - Top Right */}
+            <div className="absolute top-4 right-4 z-10 bg-black/80 backdrop-blur-sm px-4 py-2 rounded-lg">
+              <div className="text-white text-right">
+                <div className="text-xs opacity-70">Current Cost</div>
+                <div className="text-lg font-bold text-green-400">${liveCounter.toFixed(3)}</div>
+                <div className="text-xs opacity-70">{watchTime}s watched</div>
+              </div>
+            </div>
+
+            {/* Center Play/Pause Overlay - Shows on hover or when paused */}
+            <div
+              className={`absolute inset-0 z-10 flex items-center justify-center transition-all duration-300 ${isPlaying ? "opacity-0 group-hover:opacity-100 bg-black/20" : "opacity-100 bg-black/40"}`}
+            >
+              <button
+                onClick={handlePlayPause}
+                className="w-20 h-20 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center hover:bg-white/30 hover:scale-110 transition-all"
+              >
+                {isPlaying ? (
+                  // Pause Icon
+                  <div className="flex space-x-1">
+                    <div className="w-2 h-8 bg-white rounded"></div>
+                    <div className="w-2 h-8 bg-white rounded"></div>
+                  </div>
+                ) : (
+                  // Play Icon
+                  <PlayIcon className="w-10 h-10 text-white ml-1" />
+                )}
+              </button>
+            </div>
+
+            {/* Bottom Payment Info Bar */}
+            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
+              <div className="flex justify-between items-center text-white text-sm">
+                <div className="flex items-center space-x-4">
+                  <span className="font-semibold">${course.price}/sec</span>
+                  <span className="opacity-70">•</span>
+                  <span className="opacity-70">Est. total: ${estimatedTotalCost}</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
+                  <span>Live billing active</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Course Info Panel */}
+          <div className="p-6 bg-gradient-to-r from-slate-900 to-purple-900">
+            <h3 className="text-2xl font-bold text-white mb-2">{course.title}</h3>
+            <p className="text-gray-300 text-sm mb-4">{course.description}</p>
+            <div className="flex items-center space-x-4 text-sm text-gray-400">
+              <span>💰 ${course.price}/sec</span>
+              <span>⏱️ {course.duration} total</span>
+              <span>💵 Est. total: ${estimatedTotalCost}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Close Button */}
+        <button
+          onClick={handleCloseModal}
+          className="absolute top-6 right-6 bg-black/50 backdrop-blur-sm text-white p-3 rounded-full hover:bg-black/70 transition-colors"
+        >
+          ✕
+        </button>
+      </div>
+    </div>
+  );
+};
+
 const CourseDetailPage: NextPage = () => {
+  // Get course ID from URL parameters
   const params = useParams();
   const courseId = params?.courseId as string;
-  const [showVideoModal, setShowVideoModal] = useState(false);
-  const [liveCounter, setLiveCounter] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [watchTime, setWatchTime] = useState(0);
-  const [sessionStarted, setSessionStarted] = useState(false);
-  const [videoLoaded, setVideoLoaded] = useState(false);
-  const [showNotification, setShowNotification] = useState(false);
-  const [notificationMessage, setNotificationMessage] = useState("");
 
-  // Course data based on courseId
-  const courseData: Record<string, any> = {
+  // Essential state management
+  const [showVideoModal, setShowVideoModal] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [liveCounter, setLiveCounter] = useState(0);
+  const [watchTime, setWatchTime] = useState(0);
+
+  // Video reference for direct control
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  // Course data structure
+  const courseData = {
+    "react-compiler-2025": {
+      title: "React Compiler Tutorial 2025",
+      creator: "React Expert",
+      price: "0.008",
+      duration: "1h 45m",
+      rating: 4.9,
+      reviews: 856,
+      students: 2134,
+      thumbnail: "/videos/react-compiler-thumbnail.jpg",
+      videoFile: "/videos/advanced-react-patterns.mp4",
+      description:
+        "Learn the new React Compiler in 2025 - Everything you need to know about the latest React features and optimizations.",
+      longDescription:
+        "This comprehensive course covers the React Compiler introduced in 2025, including automatic optimizations, performance improvements, and how it changes the way we write React code.",
+      learningOutcomes: [
+        "Understand the React Compiler architecture",
+        "Learn automatic optimization techniques",
+        "Master performance improvements with the compiler",
+        "Apply compiler features in real projects",
+      ],
+      instructor: {
+        name: "React Expert",
+        bio: "Senior React developer with expertise in compiler technologies.",
+        courses: 8,
+        students: 12000,
+        rating: 4.9,
+      },
+    },
     dpw9EHDh2bM: {
       title: "Advanced React Patterns",
       creator: "Dan Abramov",
@@ -31,27 +204,16 @@ const CourseDetailPage: NextPage = () => {
       reviews: 1247,
       students: 5423,
       thumbnail: "https://img.youtube.com/vi/dpw9EHDh2bM/maxresdefault.jpg",
-      videoId: "dpw9EHDh2bM",
+      videoFile: "/videos/advanced-react-patterns.mp4",
       description:
-        "Master advanced React patterns including render props, higher-order components, custom hooks, and performance optimization techniques. This comprehensive course takes you from intermediate to expert level React development.",
+        "Master advanced React patterns including render props, higher-order components, custom hooks, and performance optimization techniques.",
       longDescription:
-        "This course is designed for React developers who want to take their skills to the next level. You'll learn advanced patterns that are used in production applications, understand the why behind the patterns, and know when to apply them. We'll cover render props, higher-order components, custom hooks, compound components, and much more.",
+        "This course is designed for React developers who want to take their skills to the next level. You&apos;ll learn advanced patterns that are used in production applications.",
       learningOutcomes: [
         "Master render props pattern and its use cases",
         "Build reusable higher-order components",
         "Create custom hooks for shared logic",
-        "Implement compound components pattern",
         "Optimize React performance with advanced techniques",
-        "Handle complex state management scenarios",
-      ],
-      curriculum: [
-        { title: "Introduction to Advanced Patterns", duration: "15:30", free: true },
-        { title: "Render Props Deep Dive", duration: "22:45", free: false },
-        { title: "Higher-Order Components Mastery", duration: "28:20", free: false },
-        { title: "Custom Hooks Best Practices", duration: "25:10", free: false },
-        { title: "Compound Components Pattern", duration: "20:35", free: false },
-        { title: "Performance Optimization Techniques", duration: "30:15", free: false },
-        { title: "Real-World Application", duration: "18:45", free: false },
       ],
       instructor: {
         name: "Dan Abramov",
@@ -70,26 +232,15 @@ const CourseDetailPage: NextPage = () => {
       reviews: 892,
       students: 3421,
       thumbnail: "https://img.youtube.com/vi/wm5gMKuwSYk/maxresdefault.jpg",
-      videoId: "wm5gMKuwSYk",
-      description:
-        "Complete guide to Next.js 14 with App Router, Server Components, and the latest features. Build modern, performant web applications.",
+      videoFile: "/videos/advanced-react-patterns.mp4",
+      description: "Complete guide to Next.js 14 with App Router, Server Components, and the latest features.",
       longDescription:
-        "Learn Next.js 14 from scratch with hands-on examples. This course covers everything from basic setup to advanced deployment strategies, including the new App Router, Server Components, and Streaming.",
+        "Learn Next.js 14 from scratch with hands-on examples. This course covers everything from basic setup to advanced deployment strategies.",
       learningOutcomes: [
         "Build full-stack applications with Next.js 14",
         "Master the App Router architecture",
         "Implement Server Components effectively",
-        "Handle data fetching and caching",
         "Deploy to production with best practices",
-      ],
-      curriculum: [
-        { title: "Next.js 14 Introduction", duration: "12:30", free: true },
-        { title: "App Router Deep Dive", duration: "35:45", free: false },
-        { title: "Server Components", duration: "28:20", free: false },
-        { title: "Data Fetching Strategies", duration: "32:10", free: false },
-        { title: "Styling and UI", duration: "25:35", free: false },
-        { title: "Authentication & Security", duration: "30:15", free: false },
-        { title: "Deployment & Performance", duration: "26:45", free: false },
       ],
       instructor: {
         name: "Lee Robinson",
@@ -101,331 +252,53 @@ const CourseDetailPage: NextPage = () => {
     },
   };
 
-  const course = courseData[courseId] || courseData["dpw9EHDh2bM"];
+  // Get current course (with fallback)
+  const course = courseData[courseId as keyof typeof courseData] || courseData["dpw9EHDh2bM"];
+
+  // Calculate estimated total cost
   const estimatedTotalCost = (
     (parseInt(course.duration.split("h")[0]) * 60 + parseInt(course.duration.split(" ")[1].split("m")[0])) *
     60 *
     parseFloat(course.price)
   ).toFixed(2);
 
-  // Simulate live counter when playing
+  // Payment tracking effect - increments counter every second when playing
   useEffect(() => {
     let interval: NodeJS.Timeout;
-    if (isPlaying && sessionStarted) {
+    if (isPlaying) {
       interval = setInterval(() => {
         setLiveCounter(prev => prev + parseFloat(course.price));
         setWatchTime(prev => prev + 1);
       }, 1000);
     }
     return () => clearInterval(interval);
-  }, [isPlaying, sessionStarted, course.price]);
+  }, [isPlaying, course.price]);
 
+  // Modal handlers with auto-start functionality
   const handleStartLearning = () => {
-    // Step 1: Just open modal, don't start video or payment yet
     setShowVideoModal(true);
-    setVideoLoaded(false);
-    setSessionStarted(false);
-    setIsPlaying(false);
-    // Reset counters for new session
     setLiveCounter(0);
     setWatchTime(0);
-  };
 
-  const handleStartVideo = useCallback(() => {
-    // Step 2: Load video and start payment when user clicks play
-    if (!videoLoaded) {
-      setVideoLoaded(true);
-      setSessionStarted(true);
-      setIsPlaying(true);
-    }
-    // For YouTube iframe, we assume video starts playing when loaded
-  }, [videoLoaded]);
+    // Auto-start the video after modal opens
+    setTimeout(() => {
+      if (videoRef.current) {
+        videoRef.current.play().catch(error => {
+          console.log("Autoplay failed, user needs to click play:", error);
+        });
+      }
+    }, 500);
+  };
 
   const handleCloseModal = useCallback(() => {
     setShowVideoModal(false);
     setIsPlaying(false);
-    setSessionStarted(false);
-    setVideoLoaded(false);
-    setShowNotification(false);
-    // Keep counters to show final cost
   }, []);
-
-  const showNotificationMessage = useCallback((message: string) => {
-    setNotificationMessage(message);
-    setShowNotification(true);
-    setTimeout(() => setShowNotification(false), 3000);
-  }, []);
-
-  const handlePlayPause = useCallback(() => {
-    if (!sessionStarted) {
-      // If session hasn't started, start it
-      handleStartVideo();
-      showNotificationMessage("Video started! Payment tracking begins now.");
-    } else {
-      // Toggle payment tracking (YouTube iframe controls are handled by YouTube)
-      const newPlayingState = !isPlaying;
-      setIsPlaying(newPlayingState);
-
-      if (newPlayingState) {
-        showNotificationMessage("Payment tracking resumed!");
-      } else {
-        showNotificationMessage("Payment tracking paused!");
-      }
-    }
-  }, [sessionStarted, isPlaying, handleStartVideo, showNotificationMessage]);
-
-  // Real video player component with actual video playback
-  const RealVideoPlayer = () => {
-    if (!videoLoaded) return null;
-
-    return (
-      <div className="w-full h-full bg-black relative overflow-hidden">
-        {/* YouTube Video Embed */}
-        <iframe
-          src={`https://www.youtube.com/embed/${course.videoId}?autoplay=1&mute=0&controls=1&rel=0&modestbranding=1`}
-          className="w-full h-full"
-          frameBorder="0"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowFullScreen
-          title={course.title}
-        ></iframe>
-
-        {/* Payment Status Overlay */}
-        <div className="absolute top-4 left-4">
-          <div
-            className={`px-4 py-2 rounded-full text-sm font-semibold transition-all backdrop-blur-sm ${
-              isPlaying ? "bg-red-500/90 text-white animate-pulse" : "bg-gray-500/90 text-white"
-            }`}
-          >
-            {isPlaying ? "🔴 STREAMING - Payment Active" : "⏸️ Video Paused - No Payment"}
-          </div>
-        </div>
-
-        {/* Payment Animation Overlay */}
-        {isPlaying && (
-          <div className="absolute inset-0 pointer-events-none">
-            {/* Animated payment indicators */}
-            <div className="absolute top-4 right-4">
-              <div className="flex items-center space-x-2 bg-green-500/90 px-3 py-2 rounded-full backdrop-blur-sm">
-                <div className="w-2 h-2 bg-white rounded-full animate-ping"></div>
-                <span className="text-white text-sm font-semibold">💰 ${course.price}/sec</span>
-              </div>
-            </div>
-
-            {/* Floating money emojis */}
-            <div className="absolute inset-0">
-              {[...Array(3)].map((_, i) => (
-                <div
-                  key={i}
-                  className="absolute text-green-400 text-xl animate-bounce opacity-70"
-                  style={{
-                    left: `${20 + i * 25}%`,
-                    bottom: `${20 + (i % 2) * 15}%`,
-                    animationDelay: `${i * 0.8}s`,
-                    animationDuration: "2s",
-                  }}
-                >
-                  💰
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Course Info Overlay */}
-        <div className="absolute bottom-4 left-4 right-4">
-          <div className="bg-black/70 backdrop-blur-sm rounded-lg p-3">
-            <h3 className="text-white font-bold text-lg mb-1">{course.title}</h3>
-            <div className="text-sm text-gray-300">FlowLearn - Real video with pay-per-second billing</div>
-            <div className="text-xs text-gray-400 mt-1">
-              Status: {isPlaying ? "Video Playing + Payment Active 💰" : "Video Paused + Payment Stopped ⏸️"}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  const VideoPlayerModal = () => (
-    <div
-      className={`fixed inset-0 z-50 transition-all duration-300 ${showVideoModal ? "opacity-100" : "opacity-0 pointer-events-none"}`}
-    >
-      <div className="absolute inset-0 bg-black/90 backdrop-blur-md" onClick={handleCloseModal}></div>
-
-      <div className="relative h-full flex items-center justify-center p-6">
-        <div className="bg-gradient-to-br from-slate-900/95 to-purple-900/95 backdrop-blur-xl border border-purple-500/20 rounded-3xl overflow-hidden max-w-6xl w-full max-h-[90vh]">
-          {/* Video Player */}
-          <div className="relative aspect-video bg-black">
-            {videoLoaded ? (
-              <RealVideoPlayer />
-            ) : (
-              <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-purple-600 to-pink-600 text-white text-center">
-                <div className="mb-6">
-                  <h3 className="text-2xl font-bold mb-2">{course.title}</h3>
-                  <p className="text-purple-200">Ready to start your learning journey?</p>
-                  <p className="text-sm text-purple-200 mt-2">
-                    You&apos;ll be charged ${course.price}/second while video plays
-                  </p>
-                  <p className="text-xs text-purple-300 mt-2">
-                    🎬 Real Video Player - Actual video playback with payment tracking
-                  </p>
-                </div>
-                <button
-                  onClick={handleStartVideo}
-                  className="w-24 h-24 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center hover:scale-110 transition-transform group mb-4"
-                >
-                  <PlayIcon className="w-12 h-12 text-white ml-2 group-hover:scale-110 transition-transform" />
-                </button>
-                <div className="text-sm text-purple-200">Click to load video and start playing</div>
-              </div>
-            )}
-
-            {/* Notification */}
-            {showNotification && (
-              <div className="absolute top-6 left-1/2 transform -translate-x-1/2 z-10">
-                <div className="bg-blue-500/90 backdrop-blur-sm text-white px-6 py-3 rounded-full text-sm font-semibold animate-slide-in shadow-lg">
-                  {notificationMessage}
-                </div>
-              </div>
-            )}
-
-            {/* Live Payment Overlay */}
-            {showVideoModal && (
-              <div className="absolute bottom-6 left-6 right-6">
-                <div className="bg-gradient-to-r from-black/90 to-purple-900/90 backdrop-blur-md border border-purple-500/30 rounded-2xl p-4">
-                  <div className="flex items-center justify-between">
-                    {/* Left - Status */}
-                    <div className="flex items-center space-x-4 text-white">
-                      <div className="flex items-center space-x-2">
-                        <div
-                          className={`w-3 h-3 rounded-full ${
-                            !sessionStarted ? "bg-gray-400" : isPlaying ? "bg-green-400 animate-pulse" : "bg-yellow-400"
-                          }`}
-                        ></div>
-                        <span className="text-sm font-medium">
-                          {!sessionStarted ? "READY" : isPlaying ? "STREAMING" : "PAUSED"}
-                        </span>
-                      </div>
-                      <div className="text-lg font-mono">
-                        {Math.floor(watchTime / 60)}:{(watchTime % 60).toString().padStart(2, "0")}
-                      </div>
-                    </div>
-
-                    {/* Center - Live Counter */}
-                    <div className="text-center">
-                      <div
-                        className={`text-3xl font-bold font-mono ${
-                          !sessionStarted
-                            ? "text-gray-400"
-                            : isPlaying
-                              ? "text-green-400 animate-pulse"
-                              : "text-green-400"
-                        }`}
-                      >
-                        ${liveCounter.toFixed(3)} USDC
-                      </div>
-                      <div className="text-sm text-gray-300">
-                        {!sessionStarted
-                          ? "Click ▶️ to start video &amp; payment"
-                          : isPlaying
-                            ? `+$${course.price}/sec (video playing)`
-                            : "Video paused - no payment"}
-                      </div>
-                    </div>
-
-                    {/* Right - Controls */}
-                    <div className="flex items-center space-x-3">
-                      <div className="text-center">
-                        <button
-                          onClick={handlePlayPause}
-                          className={`${
-                            !sessionStarted
-                              ? "bg-green-500 hover:bg-green-600"
-                              : isPlaying
-                                ? "bg-yellow-500 hover:bg-yellow-600"
-                                : "bg-green-500 hover:bg-green-600"
-                          } text-white p-3 rounded-full transition-colors`}
-                          title={
-                            !sessionStarted
-                              ? "Start video & payment"
-                              : isPlaying
-                                ? "Pause payment only"
-                                : "Resume payment"
-                          }
-                        >
-                          {!sessionStarted ? "▶️" : isPlaying ? "⏸️" : "▶️"}
-                        </button>
-                        <div className="text-xs text-gray-400 mt-1">
-                          {!sessionStarted ? "Start" : isPlaying ? "Pause Pay" : "Resume Pay"}
-                        </div>
-                      </div>
-                      <div className="text-center">
-                        <button
-                          onClick={handleCloseModal}
-                          className="bg-red-500 hover:bg-red-600 text-white p-3 rounded-full transition-colors"
-                          title="Stop session and close"
-                        >
-                          ⏹️
-                        </button>
-                        <div className="text-xs text-gray-400 mt-1">Stop</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Course Info Panel */}
-          <div className="p-6 bg-gradient-to-r from-slate-900 to-purple-900">
-            <div className="grid md:grid-cols-3 gap-6">
-              <div className="md:col-span-2">
-                <h3 className="text-2xl font-bold text-white mb-2">{course.title}</h3>
-                <p className="text-gray-300 text-sm mb-4">{course.description}</p>
-                <div className="flex items-center space-x-4 text-sm text-gray-400">
-                  <span>👁️ 1,234 watching now</span>
-                  <span>⏱️ {course.duration} total</span>
-                  <span>💰 Est. total: ${estimatedTotalCost}</span>
-                </div>
-              </div>
-
-              <div className="bg-black/20 rounded-2xl p-4">
-                <div className="grid grid-cols-3 gap-4 text-center">
-                  <div>
-                    <div className="text-lg font-bold text-green-400">${liveCounter.toFixed(3)}</div>
-                    <div className="text-xs text-gray-400">Spent</div>
-                  </div>
-                  <div>
-                    <div className="text-lg font-bold text-blue-400">
-                      {Math.floor(watchTime / 60)}:{(watchTime % 60).toString().padStart(2, "0")}
-                    </div>
-                    <div className="text-xs text-gray-400">Watched</div>
-                  </div>
-                  <div>
-                    <div className="text-lg font-bold text-purple-400">${estimatedTotalCost}</div>
-                    <div className="text-xs text-gray-400">Full Course</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Close Button */}
-        <button
-          onClick={handleCloseModal}
-          className="absolute top-6 right-6 bg-black/50 backdrop-blur-sm text-white p-3 rounded-full hover:bg-black/70 transition-colors"
-        >
-          ✕
-        </button>
-      </div>
-    </div>
-  );
 
   return (
     <>
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-indigo-900">
-        {/* Top Navigation */}
+        {/* Navigation Header */}
         <div className="sticky top-0 z-50 bg-black/20 backdrop-blur-md border-b border-purple-500/20">
           <div className="container mx-auto px-6 py-4">
             <div className="flex justify-between items-center">
@@ -452,15 +325,6 @@ const CourseDetailPage: NextPage = () => {
                   Dashboard
                 </Link>
               </nav>
-
-              {/* Mobile Menu Button */}
-              <div className="md:hidden">
-                <button className="text-white p-2">
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                  </svg>
-                </button>
-              </div>
             </div>
           </div>
         </div>
@@ -478,7 +342,7 @@ const CourseDetailPage: NextPage = () => {
           <div className="grid lg:grid-cols-3 gap-12">
             {/* Main Content */}
             <div className="lg:col-span-2 space-y-8">
-              {/* Video Preview Section */}
+              {/* Hero Video Preview */}
               <div className="relative">
                 <div className="aspect-video rounded-3xl overflow-hidden bg-gradient-to-br from-purple-600 to-pink-600 relative group cursor-pointer">
                   <Image src={course.thumbnail} alt={course.title} fill className="object-cover" />
@@ -491,8 +355,8 @@ const CourseDetailPage: NextPage = () => {
                     </button>
                   </div>
                   <div className="absolute bottom-6 left-6 text-white">
-                    <div className="text-sm opacity-75 mb-1">Free Preview Available</div>
-                    <div className="text-lg font-semibold">First 15 minutes free</div>
+                    <div className="text-sm opacity-75 mb-1">Ready to Learn?</div>
+                    <div className="text-lg font-semibold">Click to start</div>
                   </div>
                   <div className="absolute top-6 right-6 bg-black/50 backdrop-blur-sm rounded-full px-4 py-2 text-white font-semibold">
                     {course.duration}
@@ -542,43 +406,6 @@ const CourseDetailPage: NextPage = () => {
                     ))}
                   </div>
                 </div>
-
-                {/* Course Content */}
-                <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-6">
-                  <h3 className="text-xl font-semibold text-white mb-6">Course Content</h3>
-                  <div className="space-y-3">
-                    {course.curriculum.map((lesson: any, i: number) => (
-                      <div
-                        key={i}
-                        className="flex items-center justify-between p-4 rounded-xl hover:bg-white/5 transition-colors border border-white/10"
-                      >
-                        <div className="flex items-center space-x-4">
-                          <div className="w-8 h-8 bg-purple-500/20 rounded-full flex items-center justify-center text-sm text-purple-400 font-semibold">
-                            {i + 1}
-                          </div>
-                          <div>
-                            <h4 className="text-white font-medium">{lesson.title}</h4>
-                            {lesson.free && (
-                              <span className="inline-block bg-green-500 text-white text-xs px-2 py-1 rounded mt-1">
-                                FREE PREVIEW
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        <div className="flex items-center space-x-3">
-                          <span className="text-gray-400 text-sm">{lesson.duration}</span>
-                          {lesson.free ? (
-                            <PlayIcon className="w-5 h-5 text-green-400 cursor-pointer" />
-                          ) : (
-                            <div className="w-5 h-5 border border-gray-500 rounded flex items-center justify-center">
-                              <div className="w-2 h-2 bg-gray-500 rounded"></div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
               </div>
             </div>
 
@@ -600,7 +427,6 @@ const CourseDetailPage: NextPage = () => {
                       { duration: "10 minutes", cost: (10 * 60 * parseFloat(course.price)).toFixed(2) },
                       { duration: "30 minutes", cost: (30 * 60 * parseFloat(course.price)).toFixed(2) },
                       { duration: "1 hour", cost: (60 * 60 * parseFloat(course.price)).toFixed(2) },
-                      { duration: "Full course", cost: estimatedTotalCost },
                     ].map((item, i) => (
                       <div key={i} className="flex justify-between text-sm">
                         <span className="text-gray-400">{item.duration}:</span>
@@ -642,8 +468,6 @@ const CourseDetailPage: NextPage = () => {
                       "Pause anytime to save money",
                       "No upfront commitment",
                       "Instant access to content",
-                      "Mobile & desktop streaming",
-                      "Creator earnings in real-time",
                     ].map((feature, i) => (
                       <div key={i} className="flex items-center space-x-2 text-gray-300">
                         <CheckIcon className="w-4 h-4 text-green-400 flex-shrink-0" />
@@ -659,7 +483,17 @@ const CourseDetailPage: NextPage = () => {
       </div>
 
       {/* Video Player Modal */}
-      <VideoPlayerModal />
+      <VideoPlayerModal
+        showVideoModal={showVideoModal}
+        course={course}
+        videoRef={videoRef}
+        setIsPlaying={setIsPlaying}
+        handleCloseModal={handleCloseModal}
+        estimatedTotalCost={estimatedTotalCost}
+        isPlaying={isPlaying}
+        liveCounter={liveCounter}
+        watchTime={watchTime}
+      />
     </>
   );
 };
