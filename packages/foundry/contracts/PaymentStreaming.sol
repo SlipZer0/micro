@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.21;
 
-
-
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
@@ -10,9 +8,14 @@ interface ICourseRegistry {
     function getRateAndCreator(uint256 courseId) external view returns (uint256 ratePerSecond, address creator);
 }
 
+interface IRevenueSplit {
+    function distributeRevenue(address creator, uint256 amount) external;
+}
+
 contract PaymentStreaming is Ownable {
     IERC20 public immutable usdc;
     ICourseRegistry public immutable courseRegistry;
+    IRevenueSplit public immutable revenueSplit;
 
     struct Stream {
         address learner;
@@ -24,18 +27,25 @@ contract PaymentStreaming is Ownable {
         bool active;
     }
 
+    // courseId => learner => Stream
     mapping(uint256 => mapping(address => Stream)) public streams;
 
     event StreamStarted(uint256 indexed courseId, address indexed learner, address indexed creator, uint256 ratePerSecond);
     event StreamStopped(uint256 indexed courseId, address indexed learner, uint256 totalPaid);
     event PaymentClaimed(uint256 indexed courseId, address indexed learner, address indexed creator, uint256 amount);
 
-    constructor(address _usdc, address _courseRegistry) Ownable(msg.sender) {
+    constructor(
+        address _usdc,
+        address _courseRegistry,
+        address _revenueSplit
+    ) Ownable(msg.sender) {
         require(_usdc != address(0), "Invalid USDC address");
         require(_courseRegistry != address(0), "Invalid CourseRegistry address");
+        require(_revenueSplit != address(0), "Invalid RevenueSplit address");
 
         usdc = IERC20(_usdc);
         courseRegistry = ICourseRegistry(_courseRegistry);
+        revenueSplit = IRevenueSplit(_revenueSplit);
     }
 
     /**
@@ -93,7 +103,12 @@ contract PaymentStreaming is Ownable {
 
         uint256 amount = elapsed * s.ratePerSecond;
 
-        require(usdc.transferFrom(s.learner, s.creator, amount), "USDC transfer failed");
+        // Transfer USDC from learner to this contract first
+        require(usdc.transferFrom(s.learner, address(this), amount), "USDC pull failed");
+
+        // Approve and forward the revenue to RevenueSplit for distribution
+        require(usdc.approve(address(revenueSplit), amount), "USDC approve failed");
+        revenueSplit.distributeRevenue(s.creator, amount);
 
         s.totalPaid += amount;
         s.lastClaimed = block.timestamp;
