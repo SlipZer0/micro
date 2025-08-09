@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -19,7 +19,6 @@ const CourseDetailPage: NextPage = () => {
   const [videoLoaded, setVideoLoaded] = useState(false);
   const [showNotification, setShowNotification] = useState(false);
   const [notificationMessage, setNotificationMessage] = useState("");
-  const videoRef = useRef<HTMLVideoElement | null>(null);
 
   // Course data based on courseId
   const courseData: Record<string, any> = {
@@ -139,10 +138,7 @@ const CourseDetailPage: NextPage = () => {
       setSessionStarted(true);
       setIsPlaying(true);
     }
-    // Play the actual video
-    if (videoRef.current) {
-      videoRef.current.play();
-    }
+    // For YouTube iframe, we assume video starts playing when loaded
   }, [videoLoaded]);
 
   const handleCloseModal = useCallback(() => {
@@ -166,19 +162,14 @@ const CourseDetailPage: NextPage = () => {
       handleStartVideo();
       showNotificationMessage("Video started! Payment tracking begins now.");
     } else {
-      // Toggle both video playback AND payment
+      // Toggle payment tracking (YouTube iframe controls are handled by YouTube)
       const newPlayingState = !isPlaying;
       setIsPlaying(newPlayingState);
 
-      // Control actual video playback
-      if (videoRef.current) {
-        if (newPlayingState) {
-          videoRef.current.play();
-          showNotificationMessage("Video resumed! Payment is now active.");
-        } else {
-          videoRef.current.pause();
-          showNotificationMessage("Video paused! Payment stopped.");
-        }
+      if (newPlayingState) {
+        showNotificationMessage("Payment tracking resumed!");
+      } else {
+        showNotificationMessage("Payment tracking paused!");
       }
     }
   }, [sessionStarted, isPlaying, handleStartVideo, showNotificationMessage]);
@@ -189,28 +180,15 @@ const CourseDetailPage: NextPage = () => {
 
     return (
       <div className="w-full h-full bg-black relative overflow-hidden">
-        {/* HTML5 Video Element */}
-        <video
-          ref={videoRef}
-          className="w-full h-full object-cover"
-          poster={course.thumbnail}
-          preload="metadata"
-          onPlay={() => {
-            if (!isPlaying) setIsPlaying(true);
-          }}
-          onPause={() => {
-            if (isPlaying) setIsPlaying(false);
-          }}
-        >
-          {/* Using sample video files - you can replace these with actual course videos */}
-          <source src="https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4" type="video/mp4" />
-          <source
-            src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
-            type="video/mp4"
-          />
-          {/* Fallback message */}
-          Your browser does not support the video tag.
-        </video>
+        {/* YouTube Video Embed */}
+        <iframe
+          src={`https://www.youtube.com/embed/${course.videoId}?autoplay=1&mute=0&controls=1&rel=0&modestbranding=1`}
+          className="w-full h-full"
+          frameBorder="0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+          title={course.title}
+        ></iframe>
 
         {/* Payment Status Overlay */}
         <div className="absolute top-4 left-4">
