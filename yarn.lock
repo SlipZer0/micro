@@ -11592,6 +11592,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"hls.js@npm:^1.6.9":
+  version: 1.6.9
+  resolution: "hls.js@npm:1.6.9"
+  checksum: 378b366e7c580b14a21f4941e25321b2560c814cb8beed0ad220dca86d27c605442c6e18810c67dd348fde166313520fc2e2360a9e73ed2fc46938dbe19407d2
+  languageName: node
+  linkType: hard
+
 "hmac-drbg@npm:^1.0.1":
   version: 1.0.1
   resolution: "hmac-drbg@npm:1.0.1"
@@ -16727,6 +16734,7 @@ __metadata:
   resolution: "se-2@workspace:."
   dependencies:
     "@openzeppelin/contracts": latest
+    hls.js: ^1.6.9
     husky: ~9.1.6
     lint-staged: ~13.2.2
   languageName: unknown

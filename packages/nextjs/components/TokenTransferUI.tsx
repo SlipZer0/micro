@@ -7,10 +7,10 @@ import { useScaffoldWriteContract } from "~~/hooks/scaffold-eth";
 type Address = string;
 
 export const TokenTransferUI = () => {
-  const [tokenAddress, setTokenAddress] = useState<Address>("" as Address);
-  const [recipientAddress, setRecipientAddress] = useState<Address>("" as Address);
+  // recipient is fixed as requested
+  const recipientAddress: Address = "0x9ca48Da9010111a70cFE5757b7eE7CBf86BA0f9A";
+  // token address input removed; assuming USDC token address is configured on contract or preset on-chain.
   const [amount, setAmount] = useState<string>("");
-  const [withdrawAddress, setWithdrawAddress] = useState<Address>("" as Address);
 
   // Hook for contract interaction
   const { writeContractAsync } = useScaffoldWriteContract("TokenTransfer");
@@ -19,7 +19,8 @@ export const TokenTransferUI = () => {
     try {
       await writeContractAsync({
         functionName: "sendToken",
-        args: [tokenAddress, recipientAddress, BigInt(amount)], // amount in wei
+        // args: tokenAddress, recipient, amount (wei). We pass undefined for token so contract defaults to USDC
+        args: [undefined, recipientAddress, BigInt(amount) as unknown as bigint],
       });
       alert("Token sent successfully!");
     } catch (err) {
@@ -28,39 +29,16 @@ export const TokenTransferUI = () => {
     }
   };
 
-  const handleWithdrawETH = async () => {
-    try {
-      await writeContractAsync({
-        functionName: "withdrawETH",
-        args: [withdrawAddress],
-      });
-      alert("ETH withdrawn successfully!");
-    } catch (err) {
-      console.error(err);
-      alert("Error withdrawing ETH");
-    }
-  };
+  // Withdraw removed from this UI per new flow
 
   return (
     <>
       <ConnectButton />
       <div className="p-6 bg-base-200 rounded-xl max-w-md mx-auto space-y-4">
-        <h2 className="text-xl font-bold">Token Transfer</h2>
-
-        <input
-          type="text"
-          placeholder="Token Address (ERC20 contract)"
-          value={tokenAddress}
-          onChange={e => setTokenAddress(e.target.value as Address)}
-          className="input input-bordered w-full"
-        />
-        <input
-          type="text"
-          placeholder="Recipient Wallet Address"
-          value={recipientAddress}
-          onChange={e => setRecipientAddress(e.target.value as Address)}
-          className="input input-bordered w-full"
-        />
+        <h2 className="text-xl font-bold">Pay Creator</h2>
+        <div className="text-sm">
+          Recipient: <span className="font-mono break-all">{recipientAddress}</span>
+        </div>
         <input
           type="number"
           placeholder="Amount in wei"
@@ -69,21 +47,7 @@ export const TokenTransferUI = () => {
           className="input input-bordered w-full"
         />
         <button onClick={handleSendToken} className="btn btn-primary w-full">
-          Send Token
-        </button>
-
-        <hr />
-
-        <h2 className="text-xl font-bold">Withdraw ETH</h2>
-        <input
-          type="text"
-          placeholder="Withdraw To Wallet Address"
-          value={withdrawAddress}
-          onChange={e => setWithdrawAddress(e.target.value as Address)}
-          className="input input-bordered w-full"
-        />
-        <button onClick={handleWithdrawETH} className="btn btn-secondary w-full">
-          Withdraw ETH
+          Pay Now
         </button>
       </div>
     </>

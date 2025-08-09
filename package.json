@@ -69,6 +69,7 @@
     "node": ">=20.18.3"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "latest"
+    "@openzeppelin/contracts": "latest",
+    "hls.js": "^1.6.9"
   }
 }

@@ -11,6 +11,7 @@ const CoursesPage: NextPage = () => {
   const [selectedCategory, setSelectedCategory] = useState("all");
 
   // Extended courses data with YouTube videos
+  const VIDEO_ID = "wm5gMKuwSYk";
   const allCourses = [
     {
       title: "Advanced React Patterns",
@@ -21,7 +22,7 @@ const CoursesPage: NextPage = () => {
       students: 1247,
       category: "Programming",
       thumbnail: "https://img.youtube.com/vi/dpw9EHDh2bM/maxresdefault.jpg",
-      videoId: "dpw9EHDh2bM",
+      videoId: VIDEO_ID,
       description: "Master advanced React patterns including render props, higher-order components, and custom hooks.",
     },
     {
@@ -33,7 +34,7 @@ const CoursesPage: NextPage = () => {
       students: 892,
       category: "Programming",
       thumbnail: "https://img.youtube.com/vi/wm5gMKuwSYk/maxresdefault.jpg",
-      videoId: "wm5gMKuwSYk",
+      videoId: VIDEO_ID,
       description: "Complete guide to Next.js 14 with App Router, Server Components, and more.",
     },
     {
@@ -45,7 +46,7 @@ const CoursesPage: NextPage = () => {
       students: 2134,
       category: "Blockchain",
       thumbnail: "https://img.youtube.com/vi/gyMwXuJrbJQ/maxresdefault.jpg",
-      videoId: "gyMwXuJrbJQ",
+      videoId: VIDEO_ID,
       description: "Learn the fundamentals of Web3 development from smart contracts to dApps.",
     },
     {
@@ -57,7 +58,7 @@ const CoursesPage: NextPage = () => {
       students: 1567,
       category: "Design",
       thumbnail: "https://img.youtube.com/vi/c9Wg6Cb_YlU/maxresdefault.jpg",
-      videoId: "c9Wg6Cb_YlU",
+      videoId: VIDEO_ID,
       description: "Complete UI/UX design course covering design systems, prototyping, and user research.",
     },
     {
@@ -69,7 +70,7 @@ const CoursesPage: NextPage = () => {
       students: 1890,
       category: "Programming",
       thumbnail: "https://img.youtube.com/vi/30LWjhZzg50/maxresdefault.jpg",
-      videoId: "30LWjhZzg50",
+      videoId: VIDEO_ID,
       description: "Deep dive into TypeScript with advanced types, generics, and best practices.",
     },
     {
@@ -81,7 +82,7 @@ const CoursesPage: NextPage = () => {
       students: 987,
       category: "Blockchain",
       thumbnail: "https://img.youtube.com/vi/M576WGiDBdQ/maxresdefault.jpg",
-      videoId: "M576WGiDBdQ",
+      videoId: VIDEO_ID,
       description: "Learn to build secure smart contracts with Solidity from beginner to advanced.",
     },
     {
@@ -93,7 +94,7 @@ const CoursesPage: NextPage = () => {
       students: 3421,
       category: "Marketing",
       thumbnail: "https://img.youtube.com/vi/nU-IIXBWlS4/maxresdefault.jpg",
-      videoId: "nU-IIXBWlS4",
+      videoId: "wm5gMKuwSYk",
       description: "Complete digital marketing strategy course covering SEO, social media, and analytics.",
     },
     {
@@ -105,7 +106,7 @@ const CoursesPage: NextPage = () => {
       students: 1234,
       category: "Design",
       thumbnail: "https://img.youtube.com/vi/KYFdNJum-HE/maxresdefault.jpg",
-      videoId: "KYFdNJum-HE",
+      videoId: "wm5gMKuwSYk",
       description: "Learn how to efficiently convert Figma designs into production-ready code.",
     },
   ];

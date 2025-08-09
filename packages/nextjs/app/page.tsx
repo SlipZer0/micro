@@ -13,6 +13,7 @@ const Home: NextPage = () => {
   const [liveCounter] = useState(0.045);
 
   // Demo courses data with YouTube videos
+  const VIDEO_ID = "wm5gMKuwSYk";
   const featuredCourses = [
     {
       title: "Advanced React Patterns",
@@ -22,7 +23,7 @@ const Home: NextPage = () => {
       rating: 4.9,
       students: 1247,
       thumbnail: "https://img.youtube.com/vi/dpw9EHDh2bM/maxresdefault.jpg",
-      videoId: "dpw9EHDh2bM",
+      videoId: VIDEO_ID,
     },
     {
       title: "Next.js 14 Complete Guide",
@@ -32,7 +33,7 @@ const Home: NextPage = () => {
       rating: 4.8,
       students: 892,
       thumbnail: "https://img.youtube.com/vi/wm5gMKuwSYk/maxresdefault.jpg",
-      videoId: "wm5gMKuwSYk",
+      videoId: VIDEO_ID,
     },
     {
       title: "Web3 Development Fundamentals",
@@ -42,7 +43,7 @@ const Home: NextPage = () => {
       rating: 4.9,
       students: 2134,
       thumbnail: "https://img.youtube.com/vi/gyMwXuJrbJQ/maxresdefault.jpg",
-      videoId: "gyMwXuJrbJQ",
+      videoId: VIDEO_ID,
     },
   ];
 
