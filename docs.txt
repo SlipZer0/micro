@@ -1,0 +1,278 @@
+FlowLearn — Pay-Per-Second Course Platform (Full Project Document)
+One-line: FlowLearn is a Udemy-style course marketplace where learners pay only for the time they actually consume — billed per second in stablecoin (USDC) on an Ethereum Layer-2 — and creators earn continuously via an on-platform streaming payments system. This document describes the product, user and creator flows, UI/UX requirements, frontend components, mock API/data contracts, data models, acceptance criteria, demo script, and a build timeline you can hand to teammates.
+
+1 — Problem & Vision
+Problem
+People buy online courses up front and often watch only a small fraction → most purchases waste money.
+
+
+Creators get paid regardless of engagement; incentives to produce bite-sized, high-quality content are weak.
+
+
+Traditional micropayments are impractical due to blockchain gas fees and poor UX.
+
+
+Vision
+Let learners pay exactly for what they use. Example: $0.001 USDC / second. Watch 10 minutes → pay $0.60.
+
+
+Make payments seamless: minimal blockchain knowledge required for users (wallet UX simulated for frontend MVP).
+
+
+Enable creators to earn continuously and withdraw earnings reliably.
+
+
+
+2 — Target users & personas
+Learner (Sam)
+Wants flexible, low-risk access to content.
+
+
+Avoids upfront large payments.
+
+
+Uses mobile and desktop.
+
+
+Creator (Maya)
+Publishes courses, expects fair compensation proportional to consumption.
+
+
+Wants clear analytics and easy withdrawals.
+
+
+Admin (Platform)
+Moderates content, configures platform rates/fees, handles disputes.
+
+
+
+3 — Core value propositions
+For learners: No wasted payments. Try content cheaply and only pay for consumed seconds/minutes.
+
+
+For creators: Monetize every second of engagement; fair compensation for high-engagement content.
+
+
+For platform: Continuous revenue & less friction for learners → higher conversion and retention.
+
+
+
+4 — High-level product flows
+Learner flow
+Landing page → browse courses.
+
+
+Course page → preview + price per second (/min).
+
+
+Connect wallet (simulated for frontend-only) or sign in.
+
+
+Click Play → streaming session starts; live spend meter shows cost.
+
+
+Pause/seek → streaming pauses; owed amount calculated and shown.
+
+
+Session end → total cost displayed; transaction confirmation UI shown (simulated).
+
+
+Payment recorded to creator balance (mocked) and shown in receipts.
+
+
+Creator flow
+Creator signs up / connects wallet (simulated).
+
+
+Upload course (for hackathon: upload video link / use sample video).
+
+
+Dashboard shows live metrics: current viewers, total watch time, accrued balance.
+
+
+Creator clicks Claim / Withdraw → payout flow (simulated) and history updated.
+
+
+Creator can configure course rate, preview length, and revenue split (platform fee, public goods).
+
+
+
+Project: Pay-Per-Second Streaming Courses (Streaming Subscription Service)
+
+A platform where learners pay only for the time they actually consume (e.g., $0.001 per second), using stablecoins on an Ethereum Layer-2. Creators earn continuously as learners watch; users never “waste” upfront money on content they never watch. Gas and UX friction are minimized with Layer-2 + account abstraction.
+
+Problem Statement (what’s broken today)
+Upfront payments cause waste. People buy courses ($30–$100) and often watch only a small portion. Money for the unused portion is effectively wasted.
+
+Example: Paid course = $50, watched 2 hours out of 10 → 80% of the purchase is wasted.
+
+Creators get paid regardless of actual consumption. This reduces incentives for high-quality, consumable content and makes it harder to fairly price short or experimental content.
+
+Subscription and refund friction. Refunds are manual and messy; subscriptions lock users into fixed payments that don’t reflect real use.
+
+Micropayments are hard on-chain due to fees and UX. On mainnet chain fees and wallet friction make tiny payments impractical — users must hold gas tokens, bridge assets, etc.
+
+The Solution (what we'll build)
+A web app + smart contract system that:
+
+Charges per-second (or per-minute) while a user actively watches a course video.
+
+Uses stablecoins (e.g., USDC) on an Ethereum Layer-2 to keep fees tiny.
+
+Employs account abstraction / paymaster or a relayer so users don’t need to manage ETH gas — one-time authorization is enough.
+
+Records start/stop events; the smart contract accrues payment owed to the creator; creators withdraw periodically.
+
+
+GUI Design
+A. Landing Page
+Goal: Instantly communicate “Pay as You Learn” and get users into courses.
+
+Header (Sticky)
+
+Logo (top left)
+
+Navigation: “Courses”, “Creators”, “How It Works”, “Dashboard”
+
+Wallet Connect button (top right) — gradient style.
+
+Hero Section
+
+Headline: “Only Pay for What You Learn”
+
+Subtext: “Watch online courses and pay per second with stablecoins. No wasted money, no fixed subscriptions.”
+
+CTA Buttons:
+
+“Find Courses” (Primary)
+
+“Become a Creator” (Secondary outline)
+
+Illustration: Animated mockup of a course with live USDC counter.
+
+Feature Highlights (3-column cards with icons):
+
+Pay Per Second in USDC
+
+Gasless Payments on Layer 2
+
+Instant Creator Earnings
+
+Trending Courses Section
+
+Carousel of top courses with thumbnails, price/sec, rating, creator name.
+
+Footer
+
+Links: About, Contact, GitHub, Docs.
+
+B. Course Catalog Page
+Goal: Let users browse and find courses quickly.
+
+Search Bar + Filters
+
+Search by name, category, creator.
+
+Filter by price/sec, popularity, duration.
+
+Course Cards Grid
+
+Thumbnail
+
+Title
+
+Creator name & profile picture
+
+Price per second (e.g., $0.005/sec)
+
+Star rating
+
+Hover Animation: Slight zoom + glow on hover.
+
+Pagination / Infinite Scroll.
+
+C. Course Detail Page
+Goal: Preview course & start pay-per-second streaming.
+
+Top Section
+
+Course video thumbnail with Play button overlay.
+
+Course title + creator info.
+
+Price per second prominently displayed.
+
+"Start Learning" button → opens video player modal.
+
+Course Content List
+
+Expandable sections (lectures/chapters).
+
+About This Course
+
+Description, difficulty level, requirements.
+
+Reviews
+
+List of user reviews & ratings.
+
+D. Video Player Modal (Main UX Moment)
+Goal: Deliver the “WOW” factor.
+
+Fullscreen modal with blurred background.
+
+Video Player
+
+HTML5 <video> or Video.js.
+
+On Play → start timer + USDC counter animation.
+
+On Pause → stop timer/counter.
+
+Overlay Bar (Bottom)
+
+Left: Elapsed time.
+
+Center: Live USDC counter ($0.032 USDC).
+
+Right: Pause/Stop buttons with hover effects.
+
+Toast Notifications
+
+"Streaming payment started"
+
+"Payment paused — you saved $X"
+
+E. Creator Dashboard
+Goal: Let creators track and withdraw earnings.
+
+Header: “Creator Dashboard”
+
+Metrics Cards (Top Row)
+
+Total Earnings
+
+Active Streams
+
+Total Viewers
+
+Earnings Graph
+
+Line chart showing daily earnings (mock data if frontend-only).
+
+Recent Activity Table
+
+User, time watched, amount earned.
+
+Withdraw Earnings Button
+
+Click → fake modal: “$X USDC transferred to your wallet.”
+
+F. Profile Page
+Goal: Show user’s purchased courses and watch history.
+
+Tabs:
+
+“My Courses” (grid view)
+
+“Watch History” (list with timestamps and spent amounts)
