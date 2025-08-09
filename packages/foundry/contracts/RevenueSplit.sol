@@ -3,62 +3,83 @@ pragma solidity ^0.8.20;
 
 /**
  * @title RevenueSplit
- * @dev Handles automatic split of payments between platform and creator
+ * @dev Handles splitting ERC20 payments between a creator and the platform.
+ *      This version supports ERC20 tokens like USDC.
  */
-contract RevenueSplit {
-    address public platformWallet;
-    uint256 public platformFeeBps; // fee in basis points (100 = 1%)
-    uint256 public constant MAX_BPS = 10000; // 100%
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
-    event PlatformFeeUpdated(uint256 oldFee, uint256 newFee);
-    event PlatformWalletUpdated(address oldWallet, address newWallet);
-    event RevenueDistributed(address indexed creator, uint256 creatorAmount, uint256 platformAmount);
+contract RevenueSplit is Ownable {
+    IERC20 public immutable paymentToken; // e.g., USDC contract
+    address public platformWallet; // Platform fee receiver
+    uint256 public platformFeeBps; // Platform fee in basis points (100 bps = 1%)
 
-    constructor(address _platformWallet, uint256 _platformFeeBps) {
+    event PaymentSplit(
+        address indexed payer,
+        address indexed creator,
+        uint256 creatorAmount,
+        uint256 platformAmount
+    );
+
+    /**
+     * @param _paymentToken ERC20 token address for payments (e.g., USDC)
+     * @param _platformWallet Address where platform fees are sent
+     * @param _platformFeeBps Platform fee in basis points (100 = 1%)
+     */
+    constructor(
+        address _paymentToken,
+        address _platformWallet,
+        uint256 _platformFeeBps
+    ) Ownable(msg.sender) {
+        require(_paymentToken != address(0), "Invalid token");
         require(_platformWallet != address(0), "Invalid platform wallet");
-        require(_platformFeeBps <= MAX_BPS, "Fee too high");
+        require(_platformFeeBps <= 10000, "Fee too high");
+
+        paymentToken = IERC20(_paymentToken);
         platformWallet = _platformWallet;
         platformFeeBps = _platformFeeBps;
     }
 
-    function updatePlatformFee(uint256 _newFeeBps) external {
-        // For MVP: platform-controlled only; you may add Ownable
-        require(_newFeeBps <= MAX_BPS, "Fee too high");
-        emit PlatformFeeUpdated(platformFeeBps, _newFeeBps);
-        platformFeeBps = _newFeeBps;
-    }
+    /**
+     * @notice Splits a payment between the creator and the platform.
+     * @param _creator Address of the course creator
+     * @param _amount Total amount to split (in smallest token units)
+     */
+    function splitPayment(address _creator, uint256 _amount) external {
+        require(_creator != address(0), "Invalid creator");
+        require(_amount > 0, "Invalid amount");
 
-    function updatePlatformWallet(address _newWallet) external {
-        require(_newWallet != address(0), "Invalid wallet");
-        emit PlatformWalletUpdated(platformWallet, _newWallet);
-        platformWallet = _newWallet;
+        uint256 platformAmount = (_amount * platformFeeBps) / 10000;
+        uint256 creatorAmount = _amount - platformAmount;
+
+        // Pull tokens from payer
+        require(
+            paymentToken.transferFrom(msg.sender, _creator, creatorAmount),
+            "Creator payment failed"
+        );
+        require(
+            paymentToken.transferFrom(msg.sender, platformWallet, platformAmount),
+            "Platform payment failed"
+        );
+
+        emit PaymentSplit(msg.sender, _creator, creatorAmount, platformAmount);
     }
 
     /**
-     * @dev Splits payment between platform and creator
-     * @param token ERC20 token contract
-     * @param payer Address paying the funds
-     * @param creator Creator address to receive split
-     * @param amount Total amount to split
+     * @notice Updates the platform wallet address
+     * @param _wallet New platform wallet address
      */
-    function distribute(
-        IERC20 token,
-        address payer,
-        address creator,
-        uint256 amount
-    ) external {
-        require(amount > 0, "No funds to split");
-
-        uint256 platformAmount = (amount * platformFeeBps) / MAX_BPS;
-        uint256 creatorAmount = amount - platformAmount;
-
-        require(token.transferFrom(payer, platformWallet, platformAmount), "Platform transfer failed");
-        require(token.transferFrom(payer, creator, creatorAmount), "Creator transfer failed");
-
-        emit RevenueDistributed(creator, creatorAmount, platformAmount);
+    function setPlatformWallet(address _wallet) external onlyOwner {
+        require(_wallet != address(0), "Invalid wallet");
+        platformWallet = _wallet;
     }
-}
 
-interface IERC20 {
-    function transferFrom(address sender, address recipient, uint256 amount) external returns (bool);
+    /**
+     * @notice Updates the platform fee in basis points
+     * @param _bps New fee in basis points
+     */
+    function setPlatformFeeBps(uint256 _bps) external onlyOwner {
+        require(_bps <= 10000, "Fee too high");
+        platformFeeBps = _bps;
+    }
 }
